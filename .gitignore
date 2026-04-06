@@ -1,0 +1,19 @@
+# Python virtual environment
+venv/
+env/
+.env
+
+# Python bytecode (compiled files)
+__pycache__/
+*.py[cod]
+
+# Data files (Crucial: Don't upload the dataset!)
+data/*.csv
+data/*.json
+
+# IDE Settings
+.vscode/
+.idea/
+
+# Streamlit logs
+.streamlit/

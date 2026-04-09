@@ -1,36 +1,55 @@
 import pandas as pd
-import pickle # To save our vectors to a file
-from sentence_transformers import SentenceTransformer
+import pickle
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from src.embedder import generate_embeddings
 
-def generate_embeddings(text_list, model_name='all-MiniLM-L6-v2'):
-    """
-    Turns a list of strings (tags) into a giant matrix of numbers.
-    """
-    print(f"🧠 Loading AI Model: {model_name}...")
-    model = SentenceTransformer(model_name)
-    
-    print("⏳ Vectorizing movies... (this might take a minute)")
-    # This is where the magic happens
-    embeddings = model.encode(text_list, show_progress_bar=True)
-    
-    return embeddings
+class VectraDB:
+    def __init__(self, data_path, vector_path):
+        # 1. Load our cleaned movie names/titles
+        self.df = pd.read_csv(data_path)
+        
+        # 2. Load our pre-calculated math vectors
+        with open(vector_path, 'rb') as f:
+            self.vectors = pickle.load(f)
+        print("🗄️ Vectra Database Loaded and Ready!")
 
-def save_embeddings(embeddings, filepath):
-    """Saves the vectors so we don't have to re-calculate them every time."""
-    with open(filepath, 'wb') as f:
-        pickle.dump(embeddings, f)
-    print(f"💾 Vectors saved to {filepath}")
+    def search(self, query, top_k=5):
+        """
+        The core search logic:
+        1. Turn query into a vector
+        2. Compare it to all movie vectors
+        3. Return the best matches
+        """
+        # Step 1: Vectorize the user's search term
+        # We wrap [query] in a list because the embedder expects a list
+        query_vector = generate_embeddings([query])
+        
+        # Step 2: Calculate Cosine Similarity
+        # This compares the query_vector against ALL 4800+ movie vectors at once
+        similarities = cosine_similarity(query_vector, self.vectors).flatten()
+        
+        # Step 3: Get the indices of the highest scores
+        # argsort gives indices from low to high; [-top_k:] gets the best ones
+        indices = similarities.argsort()[-top_k:][::-1]
+        
+        # Step 4: Return the movie details
+        results = self.df.iloc[indices].copy()
+        results['score'] = similarities[indices]
+        return results[['id', 'title', 'score']]
 
 if __name__ == "__main__":
-    from processor import prepare_movie_data
-    
-    # 1. Get the clean data
-    df = prepare_movie_data('data/tmdb_5000_movies.csv')
-    
-    # 2. Generate the math vectors
-    movie_vectors = generate_embeddings(df['tags'].tolist())
-    
-    # 3. Save them to a file (so we can use them in database.py)
-    save_embeddings(movie_vectors, 'data/movie_vectors.pkl')
-    
-    print(f"✅ Finished! Generated a matrix of shape: {movie_vectors.shape}")
+    # Quick Test Run
+    # Make sure you've run processor.py and embedder.py first!
+    try:
+        db = VectraDB('data/cleaned_movies.csv', 'data/movie_vectors.pkl')
+        
+        user_query = "A movie about space travel and black holes"
+        print(f"\n🔍 Searching for: '{user_query}'...")
+        
+        recommendations = db.search(user_query)
+        print("\n--- Top Recommendations ---")
+        print(recommendations)
+        
+    except FileNotFoundError:
+        print("❌ Error: Files not found. Did you run the other scripts first?")

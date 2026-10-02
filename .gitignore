@@ -1,5 +1,6 @@
 # Python virtual environment
 venv/
+.venv/
 env/
 .env
 
@@ -10,10 +11,12 @@ __pycache__/
 # Data files (Crucial: Don't upload the dataset!)
 data/*.csv
 data/*.json
+data/*.pkl
 
 # IDE Settings
 .vscode/
 .idea/
 
-# Streamlit logs
-.streamlit/
+# Frontend
+frontend/node_modules/
+frontend/dist/

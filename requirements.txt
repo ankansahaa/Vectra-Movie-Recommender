@@ -2,4 +2,8 @@ pandas
 numpy
 scikit-learn
 sentence-transformers
-streamlit
+fastapi
+uvicorn[standard]
+python-dotenv
+requests
+tqdm
